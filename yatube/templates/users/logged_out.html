@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}Вы вышли из системы{% endblock %}
+
+{% block content %}
+
+  {% with card_header='Выход' card_body='Вы вышли из своей учётной записи. Ждём вас снова!' button='На главную' %}
+    <form method="post" action="{% url 'posts:index' %}">
+    {% include 'includes/form.html' %}
+  {% endwith %}
+ 
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Войти{% endblock %}
+
+{% block content %}
+
+{% with card_header='Войти на сайт' button='Войти' %}
+  {% include 'includes/form.html' %}
+  <a href="{% url 'users:password_reset_form' %}" class="btn btn-link">
+    Забыли пароль?
+  </a>
+{% endwith %}
+
+{% endblock %}

@@ -1,0 +1,25 @@
+{% load user_filters %}
+
+{% if user.is_authenticated %}
+
+{% with card_header='Комментировать:' button='Отправить' %}
+  <form method="post" action="{% url 'posts:add_comment' post.id %}">
+  {% include 'includes/form.html' %}
+{% endwith %}
+  
+{% endif %}
+
+{% for comment in comments %}
+  <div class="media mb-4">
+    <div class="media-body">
+      <h5 class="mt-0">
+        <a href="{% url 'posts:profile' comment.author.username %}">
+          {{ comment.author.username }}
+        </a>
+      </h5>
+      <p>
+        {{ comment.text }}
+      </p>
+    </div>
+  </div>
+{% endfor %}

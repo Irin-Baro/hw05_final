@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load user_filters %}
+
+{% block title %}
+  {% if request.resolver_match.view_name == 'posts:post_edit' %}  
+    Редактировать пост
+  {% else %} 
+    Новый пост    
+  {% endif %} 
+{% endblock %}
+
+{% block content %}
+  
+      {% if request.resolver_match.view_name == 'posts:post_edit' %} 
+        {% with card_header='Редактировать пост' button='Сохранить' %}
+          {% include 'includes/form.html' %}
+        {% endwith %}
+      {% else %}
+        {% with card_header='Новый пост' button='Добавить' %}
+          {% include 'includes/form.html' %}
+        {% endwith %}
+      {% endif %}
+
+{% endblock%}
