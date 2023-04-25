@@ -3,9 +3,8 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
-from django.views.decorators.cache import cache_page
 
-from .models import Comment, Post, Group, User, Follow
+from .models import Post, Group, User, Follow
 from .forms import PostForm, CommentForm
 
 
@@ -14,7 +13,6 @@ def paginator(queryset, page_number):
     return paginator.get_page(page_number)
 
 
-@cache_page(settings.CACH_TIME, key_prefix="index_page")
 def index(request):
     """Главная страница"""
     page_obj = paginator(
@@ -45,10 +43,10 @@ def profile(request, username):
     page_obj = paginator(
         author.posts.select_related('group'), request.GET.get('page')
     )
-    following = False
-    if request.user.is_authenticated:
-        following = Follow.objects.filter(
-            user=request.user, author=author).exists()
+    following = (
+        request.user.is_authenticated
+        and author.following.select_related('user').exists()
+    )
     context = {
         'author': author,
         'page_obj': page_obj,
@@ -59,13 +57,13 @@ def profile(request, username):
 
 def post_detail(request, post_id):
     """Страница записи"""
-    post = get_object_or_404(Post, pk=post_id)
-    comments = Comment.objects.filter(post=post)
-    form = CommentForm()
+    post = get_object_or_404(
+        Post.objects.select_related('author', 'group'), pk=post_id)
+    comments = post.comments.select_related('author')
     context = {
         'post': post,
         'comments': comments,
-        'form': form
+        'form': CommentForm()
     }
     return render(request, 'posts/post_detail.html', context)
 
@@ -87,7 +85,8 @@ def post_create(request):
 @login_required
 def post_edit(request, post_id):
     """Страница для редактирования записи"""
-    post = get_object_or_404(Post, pk=post_id)
+    post = get_object_or_404(
+        Post.objects.select_related('author', 'group'), pk=post_id)
     if post.author == request.user:
         form = PostForm(request.POST or None,
                         files=request.FILES or None,
@@ -103,7 +102,8 @@ def post_edit(request, post_id):
 @login_required
 def add_comment(request, post_id):
     """Страница добавления комментария"""
-    post = get_object_or_404(Post, pk=post_id)
+    post = get_object_or_404(
+        Post.objects.select_related('author', 'group'), pk=post_id)
     form = CommentForm(request.POST or None)
     if form.is_valid():
         comment = form.save(commit=False)
@@ -117,8 +117,9 @@ def add_comment(request, post_id):
 def follow_index(request):
     """Страница с постами авторов, на которых подписан пользователь"""
     page_obj = paginator(
-        Post.objects.select_related('author', 'group').
-        filter(author__following__user=request.user),
+        Post.objects
+            .select_related('author', 'group')
+            .filter(author__following__user=request.user),
         request.GET.get('page')
     )
     return render(request, 'posts/follow.html', {'page_obj': page_obj})
@@ -136,7 +137,6 @@ def profile_follow(request, username):
 @login_required
 def profile_unfollow(request, username):
     """Страница, чтобы отписаться от автора"""
-    user = request.user
     author = get_object_or_404(User, username=username)
-    Follow.objects.filter(user=user, author=author).delete()
+    Follow.objects.filter(user=request.user, author=author).delete()
     return redirect('posts:profile', username)

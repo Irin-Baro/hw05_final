@@ -1,6 +1,5 @@
 import shutil
 import tempfile
-
 from math import ceil
 from random import randint
 
@@ -64,16 +63,30 @@ class PostViewTests(TestCase):
         self.authorized_user.force_login(self.user)
 
     def test_post_is_in_the_lists_of_posts(self):
-        """Проверка контекста в шаблонах index, group_list и profile."""
+        """
+        Проверка контекста в шаблонах index,
+        follow_index, group_list и profile.
+        """
         reverse_name_list = [
-            (reverse('posts:index')),
-            (reverse('posts:group_list', kwargs={'slug': self.group.slug})),
+            (reverse('posts:index'), False),
+            (reverse('posts:follow_index'), True),
+            (reverse('posts:group_list', kwargs={
+                'slug': self.group.slug}), False),
             (reverse('posts:profile', kwargs={
-                'username': self.user.username}))
+                'username': self.user.username}), False)
         ]
-        for reverse_name in reverse_name_list:
+        for reverse_name, need_auth in reverse_name_list:
             with self.subTest(reverse_name=reverse_name):
-                response = self.unauthorized_user.get(reverse_name)
+                if not need_auth:
+                    response = self.unauthorized_user.get(reverse_name)
+                else:
+                    follower_user = User.objects.create_user(
+                        username='follower_user')
+                    self.authorized_user.force_login(follower_user)
+                    Follow.objects.create(
+                        user=follower_user,
+                        author=self.user)
+                    response = self.authorized_user.get(reverse_name)
                 self.assertEqual(response.context['page_obj'][0], self.post)
 
     def test_post_detail_show_correct_context(self):
@@ -205,7 +218,6 @@ class FollowTest(TestCase):
         super().setUpClass()
         cls.author_user = User.objects.create_user(username='author_user')
         cls.another_user = User.objects.create_user(username='another_user')
-        cls.not_follower = User.objects.create_user(username='not_follower')
 
     def setUp(self):
         self.authorized_user = Client()
@@ -234,19 +246,11 @@ class FollowTest(TestCase):
         self.assertEqual(Follow.objects.all().count(), 0)
 
     def test_new_post_for_followers(self):
-        """Новая запись появляется только в ленте подписчиков."""
-        Follow.objects.create(
-            user=self.another_user,
-            author=self.author_user)
+        """Новая запись не появляется в ленте неподписчиков."""
         post = Post.objects.create(
             author=self.author_user,
             text='Новая запись для тестирования ленты'
         )
-        response_for_follower = self.authorized_user.get(
+        response = self.authorized_user.get(
             reverse('posts:follow_index'))
-        self.assertEqual(response_for_follower.context['page_obj'][0], post)
-        not_follower = Client()
-        not_follower.force_login(self.not_follower)
-        response_for_not_follower = not_follower.get(
-            reverse('posts:follow_index'))
-        self.assertNotIn(post.text, response_for_not_follower)
+        self.assertNotIn(post, response.context['page_obj'])

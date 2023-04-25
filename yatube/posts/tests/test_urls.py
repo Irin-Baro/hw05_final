@@ -38,6 +38,7 @@ class PostUrlTests(TestCase):
         """Соответствие адресов страниц их именам."""
         urls_for_page_names = [
             ('/', reverse('posts:index')),
+            ('/follow/', reverse('posts:follow_index')),
             (f'/group/{self.group.slug}/', reverse(
                 'posts:group_list', kwargs={'slug': self.group.slug})),
             (f'/profile/{self.author_user}/', reverse(
@@ -60,6 +61,8 @@ class PostUrlTests(TestCase):
         urls_for_users = [
             (reverse('posts:index'),
                 HTTPStatus.OK, False),
+            (reverse('posts:follow_index'),
+                HTTPStatus.OK, True),
             (reverse('posts:group_list', kwargs={'slug': self.group.slug}),
                 HTTPStatus.OK, False),
             (reverse('posts:profile', kwargs={
@@ -125,6 +128,7 @@ class PostUrlTests(TestCase):
         cache.clear()
         templates_url_names = [
             (reverse('posts:index'), 'posts/index.html'),
+            (reverse('posts:follow_index'), 'posts/follow.html'),
             (reverse('posts:group_list', kwargs={'slug': self.group.slug}),
              'posts/group_list.html'),
             (reverse('posts:profile', kwargs={
