@@ -6,12 +6,12 @@
 {% endblock %}
 
 {% block content %}
-{% include 'posts/includes/switcher.html' with index=True %}
-  {% cache 20 article %}
+  {% include 'posts/includes/switcher.html' with index=True %}
+  {% cache 20 article page_obj.number %}
     {% for post in page_obj %}
       {% include 'posts/includes/article.html' %}
       {% if not forloop.last %}<hr>{% endif %}
     {% endfor %}
+    {% include 'posts/includes/paginator.html' %}
   {% endcache %}
-  {% include 'posts/includes/paginator.html' %}
 {% endblock %}

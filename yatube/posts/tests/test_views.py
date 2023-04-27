@@ -244,6 +244,8 @@ class FollowTest(TestCase):
             reverse('posts:profile_unfollow', kwargs={
                     'username': self.author_user.username}))
         self.assertEqual(Follow.objects.all().count(), 0)
+        self.assertFalse(Follow.objects.filter(
+            user=self.another_user, author=self.author_user).exists())
 
     def test_new_post_for_followers(self):
         """Новая запись не появляется в ленте неподписчиков."""
